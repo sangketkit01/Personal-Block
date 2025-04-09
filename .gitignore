@@ -1,3 +1,5 @@
 database.yml
 html
 .env
+.vscode
+.idea
