@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRGMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Sign Up</title>
+    <style>
+        body {
+            background: linear-gradient(120deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e6e6e6;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            margin: 20px;
+        }
+        .signup-card {
+            background-color: #222831;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            padding: 20px 40px;
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        .signup-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .signup-header img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #2d4059;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #4f74c8;
+            border: none;
+            padding: 12px;
+            font-weight: 500;
+            border-radius: 8px;
+        }
+        .btn-primary:hover {
+            background-color: #3a5ba0;
+        }
+        .form-control, .input-group-text {
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #2d4059;
+            border: 1px solid #394867;
+            color: #e6e6e6;
+        }
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(79, 116, 200, 0.2);
+            border-color: #4f74c8;
+            background-color: #2d4059;
+            color: #e6e6e6;
+        }
+        .input-group-text {
+            background-color: #394867;
+            color: #9ba4b4;
+        }
+        .form-label {
+            color: #9ba4b4;
+        }
+        .form-check-label {
+            color: #9ba4b4;
+        }
+        .text-muted {
+            color: #9ba4b4 !important;
+        }
+        a {
+            color: #4f74c8;
+        }
+        a:hover {
+            color: #6a8cd9;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .divider hr {
+            flex: 1;
+            border-color: #394867;
+        }
+        .divider span {
+            padding: 0 15px;
+            color: #9ba4b4;
+        }
+
+        input::placeholder{
+            color: #dedede !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="signup-card">
+        <div class="signup-header mt-5">
+            <h3>Create Account</h3>
+            <p class="text-muted">Fill in your details to Signup</p>
+        </div>
+
+
+        <form action="/signup/insert" method="post">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" class="form-control" id="username" name="username"
+                           placeholder="Choose a username" required value="{{.Form.Get "username"}}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                {{with .Form.Error.Get "email"}}
+                    <label class="text-danger">{{.}}</label>
+                {{end}}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                    <input type="email" class="form-control" id="email" name="email"
+                           placeholder="Enter your email" value="{{.Form.Get "email"}}" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                {{with .Form.Error.Get "phone"}}
+                    <label class="text-danger">{{.}}</label>
+                {{end}}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                    <input type="tel" class="form-control" id="phone" name="phone"
+                           placeholder="Enter your phone number" value="{{.Form.Get "phone"}}" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                {{with .Form.Error.Get "password"}}
+                    <label class="text-danger">{{.}}</label>
+                {{end}}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Create a password" required>
+                </div>
+                <div class="form-text text-muted">Password must be at least 8 characters</div>
+            </div>
+
+            <div class="mb-4">
+                <label for="confirm_password" class="form-label">Confirm Password</label>
+                {{with .Form.Error.Get "confirm_password"}}
+                    <label class="text-danger">{{.}}</label>
+                {{end}}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                           placeholder="Confirm your password" required>
+                </div>
+            </div>
+
+
+            <button type="submit" class="btn btn-primary w-100 mb-3 mt-4">Create Account</button>
+
+
+            <div class="text-center mt-3">
+                <p class="text-muted">Already have an account? <a href="/login" class="text-decoration-none">Sign In</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

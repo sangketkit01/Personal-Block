@@ -1,0 +1,53 @@
+create_table("users") {
+  t.Column("id", "integer", {primary: true})
+  t.Column("username", "string", {"size": 255, "null": false})
+  t.Column("email", "string", {"size": 255, "null": false})
+  t.Column("phone", "string", {"size": 10})
+  t.Column("name", "string", {"size": 255})
+  t.Column("password", "string", {"size": 255, "null": false})
+  t.Column("profile_image", "string", {"size": 255})
+  t.Column("created_at", "timestamp", {"null": false, "default_raw": "NOW()"})
+  t.Column("updated_at", "timestamp", {"null": false, "default_raw": "NOW()"})
+  t.Index("username", {"unique": true})
+}
+
+create_table("blocks") {
+  t.Column("id", "integer", {primary: true})
+  t.Column("users_id", "integer", {"null": false})
+  t.Column("title", "text", {"null": false})
+  t.Column("content", "text", {"null": false})
+  t.Column("created_at", "timestamp", {"null": false, "default_raw": "NOW()"})
+  t.Column("updated_at", "timestamp", {"null": false, "default_raw": "NOW()"})
+  t.ForeignKey("users_id", {"users": ["id"]}, {"on_delete": "cascade"})
+}
+
+create_table("comments") {
+  t.Column("id", "integer", {primary: true})
+  t.Column("users_id", "integer", {"null": false})
+  t.Column("blocks_id", "integer", {"null": false})
+  t.Column("content", "text", {"null": false})
+  t.Column("created_at", "timestamp", {"null": false, "default_raw": "NOW()"})
+  t.Column("updated_at", "timestamp", {"null": false, "default_raw": "NOW()"})
+  t.ForeignKey("users_id", {"users": ["id"]}, {"on_delete": "cascade"})
+  t.ForeignKey("blocks_id", {"blocks": ["id"]}, {"on_delete": "cascade"})
+}
+
+create_table("block_likes") {
+  t.Column("id", "integer", {primary: true})
+  t.Column("blocks_id", "integer", {"null": false})
+  t.Column("users_id", "integer", {"null": false})
+  t.ForeignKey("blocks_id", {"blocks": ["id"]}, {"on_delete": "cascade"})
+  t.ForeignKey("users_id", {"users": ["id"]}, {"on_delete": "cascade"})
+  t.Index(["blocks_id", "users_id"], {"unique": true})
+}
+
+create_table("comment_likes") {
+  t.Column("id", "integer", {primary: true})
+  t.Column("users_id", "integer", {"null": false})
+  t.Column("comments_id", "integer", {"null": false})
+  t.Column("comments_users_id", "integer", {"null": false})
+  t.Column("comments_blocks_id", "integer", {"null": false})
+  t.ForeignKey("users_id", {"users": ["id"]}, {"on_delete": "cascade"})
+  t.ForeignKey("comments_id", {"comments": ["id"]}, {"on_delete": "cascade"})
+  t.Index(["comments_id", "users_id"], {"unique": true})
+}

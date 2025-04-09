@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRGMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Login</title>
+    <style>
+        body {
+            background: linear-gradient(120deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e6e6e6;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+        .login-card {
+            background-color: #222831;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #2d4059;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .btn-primary {
+            background-color: #4f74c8;
+            border: none;
+            padding: 12px;
+            font-weight: 500;
+            border-radius: 8px;
+        }
+        .btn-primary:hover {
+            background-color: #3a5ba0;
+        }
+        .form-control, .input-group-text {
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #2d4059;
+            border: 1px solid #394867;
+            color: white;
+        }
+        input::placeholder{
+            color: #dedede !important;
+        }
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(79, 116, 200, 0.2);
+            border-color: #4f74c8;
+            background-color: #2d4059;
+            color: white;
+        }
+        .input-group-text {
+            background-color: #394867;
+            color: white;
+        }
+        .form-label {
+            color: #9ba4b4;
+        }
+        .form-check-label {
+            color: #9ba4b4;
+        }
+        .text-muted {
+            color: #9ba4b4 !important;
+        }
+        a {
+            color: #4f74c8;
+        }
+        a:hover {
+            color: #6a8cd9;
+        }
+        .divider hr {
+            flex: 1;
+            border-color: #394867;
+        }
+        .divider span {
+            padding: 0 15px;
+            color: #9ba4b4;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="login-card">
+        <div class="login-header">
+            <h3>Welcome Back</h3>
+            <p class="text-muted">Sign in to continue</p>
+        </div>
+
+        {{with .Flash}}
+            <script>
+                document.addEventListener("DOMContentLoaded",()=>{
+                    Swal.fire({
+                        title : "{{.}}" ,
+                        icon : "success",
+                    })
+                })
+            </script>
+        {{end}}
+
+        {{with .Error}}
+            <script>
+                document.addEventListener("DOMContentLoaded",()=>{
+                    Swal.fire({
+                        title : "{{.}}" ,
+                        icon : "error",
+                    })
+                })
+            </script>
+        {{end}}
+
+        <form action="/login/verify" method="post">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <div class="mb-4">
+                <label for="username" class="form-label">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" class="form-control" id="username" name="username" 
+                    placeholder="Enter your username" required>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control" id="password" name="password" 
+                    placeholder="Enter your password" required>
+                </div>
+            </div>
+
+            <div class="mb-4 d-flex justify-content-between">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="remember">
+                    <label class="form-check-label" for="remember">Remember me</label>
+                </div>
+                <a href="#" class="text-decoration-none">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3">Sign In</button>
+
+        </form>
+
+        <div class="text-center mt-4">
+            <p class="text-muted">Don't have an account? <a href="/signup" class="text-decoration-none">Sign Up</a></p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
