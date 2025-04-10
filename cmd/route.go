@@ -19,6 +19,13 @@ func route() http.Handler {
 	mux.Get("/signup", handlers.Repo.SignUpPage)
 	mux.Post("/signup/insert", handlers.Repo.SignUpInsert)
 
+	mux.Group(func (r chi.Router)  {
+		r.Use(Auth)
+
+		r.Post("/new-post",handlers.Repo.NewPost)
+		r.Get("/",handlers.Repo.Home)
+	})
+
 	fileServer := http.FileServer(http.Dir("../../static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 

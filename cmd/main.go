@@ -1,13 +1,17 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
-	"github.com/sangketkit01/personal-block/internal/driver"
-	"github.com/sangketkit01/personal-block/internal/repository"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/sangketkit01/personal-block/internal/driver"
+	"github.com/sangketkit01/personal-block/internal/helpers"
+	"github.com/sangketkit01/personal-block/internal/models"
+	"github.com/sangketkit01/personal-block/internal/repository"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/sangketkit01/personal-block/internal/config"
@@ -23,6 +27,8 @@ var errorLog *log.Logger
 const portNumber = ":8216"
 
 func main() {
+	gob.Register(models.User{})
+
 	infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.InfoLog = infoLog
 
@@ -58,6 +64,8 @@ func main() {
 
 	repo := handlers.NewRepository(&app, dbRepo)
 	handlers.NewHandlers(repo)
+
+	helpers.NewHelpers(&app)
 
 	render.NewRenderer(&app)
 
