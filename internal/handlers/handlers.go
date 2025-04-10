@@ -111,13 +111,50 @@ func (m *Repository) LoginVerify(w http.ResponseWriter, r *http.Request){
 	username := r.Form.Get("username")
 	password := r.Form.Get("password")
 
-	err = m.DB.LoginUser(username, password)
+
+	user, err := m.DB.LoginUser(username, password)
 	if err != nil{
+		m.App.InfoLog.Println(err)
 		m.App.Session.Put(r.Context(),"error","Invalid credentials")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
 	m.App.Session.Put(r.Context(),"flash","Login Successfully")
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	m.App.Session.Put(r.Context(), "user" , user )
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (m *Repository) Home(w http.ResponseWriter, r *http.Request){
+	blocks, err := m.DB.GetAllBlocks()
+	if err != nil{
+		helpers.ServerError(w,err)
+	}
+
+	data := make(map[string]interface{})
+	data["blocks"] = blocks
+
+	render.Template(w,r,"home.page.tmpl",&models.TemplateData{
+		Data: data,
+	})
+}
+
+func (m *Repository) NewPost(w http.ResponseWriter, r *http.Request){
+	err := r.ParseForm()
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	user := m.App.Session.Get(r.Context(),"user").(models.User)
+	content := r.Form.Get("block-content")	
+
+	err = m.DB.InsertNewBlock(user.ID,content)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	m.App.Session.Put(r.Context(),"flash","Create post successfully")
+	http.Redirect(w,r,"/",http.StatusSeeOther)
 }

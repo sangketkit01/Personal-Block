@@ -14,7 +14,6 @@ create_table("users") {
 create_table("blocks") {
   t.Column("id", "integer", {primary: true})
   t.Column("users_id", "integer", {"null": false})
-  t.Column("title", "text", {"null": false})
   t.Column("content", "text", {"null": false})
   t.Column("created_at", "timestamp", {"null": false, "default_raw": "NOW()"})
   t.Column("updated_at", "timestamp", {"null": false, "default_raw": "NOW()"})

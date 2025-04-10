@@ -4,24 +4,32 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/justinas/nosurf"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
+
+	"github.com/justinas/nosurf"
 
 	"github.com/sangketkit01/personal-block/internal/config"
 	"github.com/sangketkit01/personal-block/internal/models"
 )
 
 var app *config.AppConfig
-var functions = template.FuncMap{}
+var functions = template.FuncMap{
+	"humanTime" : HumanTime,
+}
 
 var pathToTemplates = "../templates"
 
 // NewRenderer sets the config for the template package
 func NewRenderer(a *config.AppConfig) {
 	app = a
+}
+
+func HumanTime(t time.Time) string{
+	return t.Format("2006-01-02 15:04")
 }
 
 // AddDefaultData adds default data to our app

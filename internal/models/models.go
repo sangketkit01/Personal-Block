@@ -19,7 +19,6 @@ type User struct {
 type Block struct{
 	ID int
 	UserID int
-	Title string
 	Content string
 	CreatedAt time.Time
 	UpdatedAt time.Time
