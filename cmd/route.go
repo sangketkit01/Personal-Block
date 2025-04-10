@@ -21,7 +21,11 @@ func route() http.Handler {
 
 	mux.Group(func (r chi.Router)  {
 		r.Use(Auth)
-
+		r.Get("/logout",handlers.Repo.Logout)
+		r.Get("/myblock",handlers.Repo.MyBlock)
+		r.Get("/profile",handlers.Repo.ProfilePage)
+		r.Post("/update-profile",handlers.Repo.UpdateProfile)
+		r.Post("/update-password",handlers.Repo.UpdatePassword)
 		r.Post("/new-post",handlers.Repo.NewPost)
 		r.Get("/",handlers.Repo.Home)
 	})

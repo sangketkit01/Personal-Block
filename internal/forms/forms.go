@@ -65,3 +65,7 @@ func (f *Form) IsEmail(field string) {
 		f.Error.Add(field, "Invalid email address")
 	}
 }
+
+func (f *Form) IsNumeric(field string) bool{
+	return govalidator.IsNumeric(f.Get(field))
+}

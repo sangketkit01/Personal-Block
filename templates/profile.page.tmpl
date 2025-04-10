@@ -1,0 +1,103 @@
+{{template "layout" .}}
+
+    {{define "title"}}
+        Home
+    {{end}}
+
+    {{define "css"}}
+        <style>
+            .form-control::placeholder {
+                color: gray;
+            }
+            
+            .card {
+                cursor: pointer;
+                transition: transform 0.2s;
+            }
+            
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            }
+            
+            .like-button {
+                color: #fff;
+                border: none;
+                background: transparent;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                transition: all 0.2s;
+            }
+            
+            .like-button:hover {
+                color: #ff6b6b;
+            }
+            
+            .like-button.active {
+                color: #ff6b6b;
+            }
+            
+            .card-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .likes-count {
+                font-size: 14px;
+            }
+
+            .post-time {
+                color: #999 !important;
+                font-size: 14px; 
+                font-weight: normal;
+            }
+        </style>
+    {{end}}
+
+
+    {{define "content"}}
+        {{$user := index .Data "user"}}
+        
+        <div class="container">
+            <div class="col d-flex flex-column justify-items-center w-75 mx-auto">
+                <h1 class="text-white fw-bold">Profile</h1>
+                <form action="/update-profile" class="form-group mx-auto w-75 d-flex flex-column" method="post">
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+                    <label for="username" class="form-label text-white fw-bold mt-3">Username</label>
+                    <input type="text" name="username" value="{{$user.Username}}" class="form-control bg-dark text-secondary" readonly>
+
+                    <label for="name" class="form-label text-white fw-bold mt-3">Name</label>
+                    <input type="text" name="name" value="{{$user.Name}}" class="form-control bg-dark text-white" required>
+
+                    <label for="email" class="form-label text-white fw-bold mt-3">Email</label>
+                    <input type="email" name="email" class="form-control bg-dark text-white" value="{{$user.Email}}" required>
+
+                    <label for="phone" class="form-label text-white fw-bold mt-3">Phone</label>
+                    <input type="phone" name="phone" value="{{$user.Phone}}" class="form-control bg-dark text-white" required>
+
+                    <input type="submit" id="submit-new-block" value="Submit" class="btn btn-primary mt-3 ms-auto">
+                </form>
+
+                <hr class="bg-white text-white mt-4">
+
+                <h2 class="text-white fw-bold">Update Password</h2>
+                <form action="/update-password" class="form-group mx-auto w-75 d-flex flex-column mb-4" method="post">
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+                    <label for="old-password" class="form-label text-white fw-bold mt-3">Old Password</label>
+                    <input type="password" name="old-password" class="form-control bg-dark text-white">
+
+                    <label for="new-password" class="form-label text-white fw-bold mt-3">New Password</label>
+                    <input type="password" name="new-password" class="form-control bg-dark text-white">
+
+                    <label for="confirm-password" class="form-label text-white fw-bold mt-3">Confirm Password</label>
+                    <input type="password" name="confirm-password" class="form-control bg-dark text-white">
+
+                    <input type="submit" id="submit-new-block" value="Submit" class="btn btn-primary mt-3 ms-auto">
+                </form>
+            </div>
+        </div>
+    {{end}}

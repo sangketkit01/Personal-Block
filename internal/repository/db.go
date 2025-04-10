@@ -131,13 +131,16 @@ func (repo *DBRepo) GetAllBlocks() ([]models.Block, error) {
 	var blocks []models.Block
 
 	query := `
-		SELECT id, users_id, content, created_at, updated_at FROM blocks
+		SELECT id, users_id, content, created_at, updated_at FROM blocks ORDER BY id DESC
 	`
 
 	rows, err :=  repo.DB.QueryContext(ctx,query)
 	if err != nil {
 		return nil, err
 	}
+
+
+	defer rows.Close()
 
 	for rows.Next(){
 		var block models.Block
@@ -153,7 +156,7 @@ func (repo *DBRepo) GetAllBlocks() ([]models.Block, error) {
 			return nil, err
 		}
 
-		user, err := repo.GetUserFromID(block.ID)
+		user, err := repo.GetUserFromID(block.UserID)
 		if err != nil{
 			return nil, err
 		}
@@ -181,6 +184,108 @@ func (repo *DBRepo) InsertNewBlock(userID int, content string) error{
 
 	_, err := repo.DB.ExecContext(ctx,query,userID,content,time.Now(),time.Now())
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repo *DBRepo) GetBlockByUserID(id int) ([]models.Block, error){
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var blocks []models.Block
+
+	query := `
+		SELECT id, users_id, content, created_at, updated_at FROM blocks
+		WHERE users_id = $1
+	`
+
+	rows, err :=  repo.DB.QueryContext(ctx,query,id)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next(){
+		var block models.Block
+		err = rows.Scan(
+			&block.ID,
+			&block.UserID,
+			&block.Content,
+			&block.CreatedAt,
+			&block.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		user, err := repo.GetUserFromID(block.UserID)
+		if err != nil{
+			return nil, err
+		}
+
+		block.User = user
+
+		blocks = append(blocks, block)
+	}
+
+	if err = rows.Err() ; err != nil{
+		return nil, err
+	}
+
+	return blocks, nil
+}
+
+func (repo *DBRepo) UpdateProfile(u models.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	query := `
+		UPDATE users SET name = $1 , email = $2 , phone = $3 WHERE id = $4
+	`
+
+	_, err := repo.DB.ExecContext(ctx,query,u.Name,u.Email,u.Phone,u.ID)
+	if err != nil {
+		return err
+	}
+
+	return  nil
+}
+
+func (repo *DBRepo) UpdateUserPassword(id int , oldPassword, newPassword string) error{
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	query := `
+		SELECT password FROM users WHERE id = $1
+	`
+
+	var oldHashedPassword string
+
+	row := repo.DB.QueryRowContext(ctx,query,id)
+	err := row.Scan(&oldHashedPassword)
+	if err != nil {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(oldHashedPassword),[]byte(oldPassword))
+	if err == bcrypt.ErrMismatchedHashAndPassword{
+		return bcrypt.ErrMismatchedHashAndPassword
+	}else if err != nil{
+		return err
+	}
+
+	newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword),bcrypt.DefaultCost)
+	if err != nil{
+		return err
+	}
+
+	query = `UPDATE users SET password = $1 WHERE id = $2`
+	_, err = repo.DB.ExecContext(ctx,query,newHashedPassword,id)
+	if err != nil{
 		return err
 	}
 

@@ -1,13 +1,15 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/sangketkit01/personal-block/internal/config"
 	"github.com/sangketkit01/personal-block/internal/forms"
 	"github.com/sangketkit01/personal-block/internal/helpers"
 	"github.com/sangketkit01/personal-block/internal/models"
 	"github.com/sangketkit01/personal-block/internal/render"
 	"github.com/sangketkit01/personal-block/internal/repository"
-	"net/http"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Repo is the handlers repository
@@ -120,7 +122,7 @@ func (m *Repository) LoginVerify(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	m.App.Session.Put(r.Context(),"flash","Login Successfully")
+	m.App.Session.Put(r.Context(),"flash","Logged in Successfully")
 	m.App.Session.Put(r.Context(), "user" , user )
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -129,6 +131,7 @@ func (m *Repository) Home(w http.ResponseWriter, r *http.Request){
 	blocks, err := m.DB.GetAllBlocks()
 	if err != nil{
 		helpers.ServerError(w,err)
+		return
 	}
 
 	data := make(map[string]interface{})
@@ -157,4 +160,122 @@ func (m *Repository) NewPost(w http.ResponseWriter, r *http.Request){
 
 	m.App.Session.Put(r.Context(),"flash","Create post successfully")
 	http.Redirect(w,r,"/",http.StatusSeeOther)
+}
+
+func (m *Repository) MyBlock(w http.ResponseWriter, r *http.Request){
+	user := m.App.Session.Get(r.Context(),"user").(models.User)
+
+	blocks, err := m.DB.GetBlockByUserID(user.ID)
+	if err != nil {
+		helpers.ServerError(w,err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["blocks"] = blocks
+
+	render.Template(w,r,"myblock.page.tmpl",&models.TemplateData{
+		Data: data,
+	})
+}
+
+func (m *Repository) Logout(w http.ResponseWriter, r *http.Request){
+	_ = m.App.Session.Destroy(r.Context())
+
+	m.App.Session.Put(r.Context(),"flash","Logged out succuessfully")
+	http.Redirect(w,r,"/login",http.StatusTemporaryRedirect)
+}
+
+func (m *Repository) ProfilePage(w http.ResponseWriter, r *http.Request){
+	user := m.App.Session.Get(r.Context(),"user").(models.User)
+
+	data := make(map[string]interface{})
+	data["user"] = user
+
+	render.Template(w,r,"profile.page.tmpl",&models.TemplateData{
+		Data: data,
+	})
+}
+
+func (m *Repository) UpdateProfile(w http.ResponseWriter, r *http.Request){
+	err := r.ParseForm()
+	if err != nil{
+		helpers.ServerError(w,err)
+		return
+	}
+
+	user := m.App.Session.Get(r.Context(),"user").(models.User)
+	name := r.Form.Get("name")
+	email := r.Form.Get("email")
+	phone := r.Form.Get("phone")
+
+	form := forms.New(r.PostForm)
+	if len(phone) != 10 || !form.IsNumeric("phone") {
+		m.App.InfoLog.Println("Invalid phone")
+		m.App.Session.Put(r.Context(),"error","Invalid phone")
+		http.Redirect(w,r,"/profile",http.StatusSeeOther)
+		return
+	}
+
+	user.Name = name
+	user.Email = email
+	user.Phone = phone
+	
+	err = m.DB.UpdateProfile(user)
+	if err != nil {
+		helpers.ServerError(w,err)
+		return
+	}
+
+	m.App.Session.Put(r.Context(),"user",user)
+	m.App.Session.Put(r.Context(),"flash","Updated profile successfully")
+	http.Redirect(w,r,"/profile",http.StatusSeeOther)
+}
+
+func (m *Repository) UpdatePassword(w http.ResponseWriter, r *http.Request){
+	err := r.ParseForm()
+	if err != nil{
+		helpers.ServerError(w,err)
+		return
+	}
+
+	user := m.App.Session.Get(r.Context(),"user").(models.User)
+
+	oldPassword := r.Form.Get("old-password")
+	newPassword := r.Form.Get("new-password")
+	confirmPassword := r.Form.Get("confirm-password")
+
+	if len(newPassword) < 8 {
+		m.App.Session.Put(r.Context(),"error","Password must have at least 8 characters")
+		http.Redirect(w,r,"/profile",http.StatusSeeOther)
+		return
+	}
+
+	if confirmPassword != newPassword {
+		m.App.Session.Put(r.Context(),"error","Password does not match")
+		http.Redirect(w,r,"/profile",http.StatusSeeOther)
+		return
+	}
+
+	err = m.DB.UpdateUserPassword(user.ID,oldPassword,newPassword)
+	if err == bcrypt.ErrMismatchedHashAndPassword{
+		m.App.Session.Put(r.Context(),"error","Invalid Password")
+		http.Redirect(w,r,"/profile",http.StatusSeeOther)
+		return
+	}else if err != nil{
+		helpers.ServerError(w, err)
+		return
+	}
+
+	newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword),bcrypt.DefaultCost)
+	if err != nil {
+		helpers.ServerError(w,err)
+		return
+	}
+
+	user.Password = string(newHashedPassword)
+
+	m.App.Session.Put(r.Context(),"user",user)
+	m.App.Session.Put(r.Context(),"flash","Updated password successfully")
+	http.Redirect(w,r,"/profile",http.StatusSeeOther)
 }
