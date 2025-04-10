@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/sangketkit01/personal-block/internal/config"
 	"github.com/sangketkit01/personal-block/internal/forms"
 	"github.com/sangketkit01/personal-block/internal/helpers"
@@ -128,14 +130,17 @@ func (m *Repository) LoginVerify(w http.ResponseWriter, r *http.Request){
 }
 
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request){
-	blocks, err := m.DB.GetAllBlocks()
+	blocks, err := m.DB.GetAllBlocks(r)
 	if err != nil{
 		helpers.ServerError(w,err)
 		return
 	}
 
+	user := m.App.Session.Get(r.Context(),"user").(models.User)
+
 	data := make(map[string]interface{})
 	data["blocks"] = blocks
+	data["user"] = user
 
 	render.Template(w,r,"home.page.tmpl",&models.TemplateData{
 		Data: data,
@@ -278,4 +283,50 @@ func (m *Repository) UpdatePassword(w http.ResponseWriter, r *http.Request){
 	m.App.Session.Put(r.Context(),"user",user)
 	m.App.Session.Put(r.Context(),"flash","Updated password successfully")
 	http.Redirect(w,r,"/profile",http.StatusSeeOther)
+}
+
+func (m *Repository) InsertLike(w http.ResponseWriter, r *http.Request){
+	blockID, err := strconv.Atoi(chi.URLParam(r,"id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	userID, err := strconv.Atoi(chi.URLParam(r,"user_id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	err = m.DB.InsertLikeByPostIDUserID(blockID,userID)
+	if err != nil{
+		helpers.ServerError(w, err)
+		return
+	}
+
+	
+	http.Redirect(w,r,r.Referer(),http.StatusSeeOther)
+}
+
+func (m *Repository) RemoveLike(w http.ResponseWriter, r *http.Request){
+	blockID, err := strconv.Atoi(chi.URLParam(r,"id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	userID, err := strconv.Atoi(chi.URLParam(r,"user_id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	err = m.DB.RemoveLikeByPostIDUserID(blockID,userID)
+	if err != nil{
+		helpers.ServerError(w, err)
+		return
+	}
+
+	
+	http.Redirect(w,r,r.Referer(),http.StatusSeeOther)
 }

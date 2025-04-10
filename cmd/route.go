@@ -28,6 +28,9 @@ func route() http.Handler {
 		r.Post("/update-password",handlers.Repo.UpdatePassword)
 		r.Post("/new-post",handlers.Repo.NewPost)
 		r.Get("/",handlers.Repo.Home)
+
+		r.Post("/insert-like/{id}/{user_id}",handlers.Repo.InsertLike)
+		r.Post("/remove-like/{id}/{user_id}",handlers.Repo.RemoveLike)
 	})
 
 	fileServer := http.FileServer(http.Dir("../../static/"))

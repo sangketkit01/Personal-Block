@@ -23,6 +23,8 @@ type Block struct{
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	User User
+	LikeCount int
+	LikeByCurrentUser bool
 }
 
 type Comment struct{

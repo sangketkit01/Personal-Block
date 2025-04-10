@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/sangketkit01/personal-block/internal/config"
@@ -124,21 +125,28 @@ func (repo *DBRepo) GetUserFromID(id int) (models.User, error) {
 	return user , nil
 }
 
-func (repo *DBRepo) GetAllBlocks() ([]models.Block, error) {
+func (repo *DBRepo) GetAllBlocks(r *http.Request) ([]models.Block, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
+
+	currentUser := repo.App.Session.Get(r.Context(),"user").(models.User)
 
 	var blocks []models.Block
 
 	query := `
-		SELECT id, users_id, content, created_at, updated_at FROM blocks ORDER BY id DESC
+		SELECT 
+			b.id, b.users_id, b.content, b.created_at, b.updated_at, COUNT(bl.users_id) as like_count
+		FROM blocks b
+		LEFT JOIN block_likes bl ON b.id = bl.blocks_id
+		GROUP BY b.id, b.users_id, b.content, b.created_at, b.updated_at
+		ORDER BY b.created_at DESC;
 	`
+
 
 	rows, err :=  repo.DB.QueryContext(ctx,query)
 	if err != nil {
 		return nil, err
 	}
-
 
 	defer rows.Close()
 
@@ -150,6 +158,7 @@ func (repo *DBRepo) GetAllBlocks() ([]models.Block, error) {
 			&block.Content,
 			&block.CreatedAt,
 			&block.UpdatedAt,
+			&block.LikeCount,
 		)
 
 		if err != nil {
@@ -162,6 +171,7 @@ func (repo *DBRepo) GetAllBlocks() ([]models.Block, error) {
 		}
 
 		block.User = user
+		block.LikeByCurrentUser = repo.IsLikeByUser(currentUser.ID,block.ID)
 
 		blocks = append(blocks, block)
 	}
@@ -171,6 +181,30 @@ func (repo *DBRepo) GetAllBlocks() ([]models.Block, error) {
 	}
 
 	return blocks, nil
+}
+
+func (repo *DBRepo) IsLikeByUser(id, blockID int) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var count int
+	query := `
+		SELECT count(users_id) FROM block_likes WHERE users_id = $1 and  blocks_id = $2
+	`
+
+	row := repo.DB.QueryRowContext(ctx,query,id,blockID)
+	err := row.Scan(&count)
+	if err != nil{
+		if err == sql.ErrNoRows{
+			repo.App.InfoLog.Println("Now row found.")
+			return false
+		}else{
+			repo.App.ErrorLog.Println("Query Error IsLikeByUser:",err)
+			return false
+		}
+	}
+
+	return count != 0
 }
 
 func (repo *DBRepo) InsertNewBlock(userID int, content string) error{
@@ -197,8 +231,10 @@ func (repo *DBRepo) GetBlockByUserID(id int) ([]models.Block, error){
 	var blocks []models.Block
 
 	query := `
-		SELECT id, users_id, content, created_at, updated_at FROM blocks
-		WHERE users_id = $1
+		SELECT b.id, b.users_id, b.content, b.created_at, b.updated_at, count(bl.users_id) FROM blocks b
+		JOIN block_likes bl ON (b.users_id = bl.users_id)
+		WHERE b.users_id = $1
+		ORDER BY b.created_at DESC
 	`
 
 	rows, err :=  repo.DB.QueryContext(ctx,query,id)
@@ -216,6 +252,7 @@ func (repo *DBRepo) GetBlockByUserID(id int) ([]models.Block, error){
 			&block.Content,
 			&block.CreatedAt,
 			&block.UpdatedAt,
+			&block.LikeCount,
 		)
 
 		if err != nil {
@@ -272,9 +309,7 @@ func (repo *DBRepo) UpdateUserPassword(id int , oldPassword, newPassword string)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(oldHashedPassword),[]byte(oldPassword))
-	if err == bcrypt.ErrMismatchedHashAndPassword{
-		return bcrypt.ErrMismatchedHashAndPassword
-	}else if err != nil{
+	if err != nil{
 		return err
 	}
 
@@ -285,6 +320,39 @@ func (repo *DBRepo) UpdateUserPassword(id int , oldPassword, newPassword string)
 
 	query = `UPDATE users SET password = $1 WHERE id = $2`
 	_, err = repo.DB.ExecContext(ctx,query,newHashedPassword,id)
+	if err != nil{
+		return err
+	}
+
+	return nil
+}
+
+func (repo *DBRepo) InsertLikeByPostIDUserID(blockID, userID int) error{
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	query := `
+		INSERT INTO block_likes (blocks_id, users_id, created_at, updated_at) 
+		VALUES ($1, $2, $3, $4)
+	`
+
+	_ , err := repo.DB.ExecContext(ctx,query,blockID,userID,time.Now(),time.Now())
+	if err != nil{
+		return err
+	}
+
+	return nil
+}
+
+func (repo *DBRepo) RemoveLikeByPostIDUserID(blockID, userID int) error{
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	query := `
+		DELETE FROM block_likes WHERE users_id = $1 and blocks_id = $2
+	`
+
+	_ , err := repo.DB.ExecContext(ctx,query,userID,blockID)
 	if err != nil{
 		return err
 	}
