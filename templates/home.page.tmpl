@@ -59,7 +59,7 @@
 
     {{define "content"}}
         <div class="container">
-            <div class="col d-flex flex-column justify-items-center w-75 mx-auto">
+            <div class="col d-flex flex-column justify-items-center w-75 mx-auto mb-4">
                 <form action="/new-post" class="form-group mx-auto w-100 d-flex flex-column" method="post">
                     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
                     <textarea name="block-content" class="form-control bg-dark text-white" rows="10"

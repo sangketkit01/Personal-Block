@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"time"
+	"unicode"
 
 	"github.com/justinas/nosurf"
 
@@ -33,13 +34,17 @@ func HumanTime(t time.Time) string{
 	return t.Format("2006-01-02 15:04")
 }
 
-func FirstChar(s string) string{
-	if len(s) == 0{
+
+func FirstChar(s string) string {
+	if len(s) == 0 {
 		return ""
 	}
 
-	return string([]rune(s)[0])
+	firstRune := []rune(s)[0]
+	upperRune := unicode.ToUpper(firstRune)
+	return string(upperRune)
 }
+
 
 // AddDefaultData adds default data to our app
 func AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateData {
