@@ -14,10 +14,14 @@ func route() http.Handler {
 	mux.Use(NoSurf)
 	mux.Use(SessionLoad)
 
-	mux.Get("/login", handlers.Repo.LoginPage)
-	mux.Post("/login/verify",handlers.Repo.LoginVerify)
-	mux.Get("/signup", handlers.Repo.SignUpPage)
-	mux.Post("/signup/insert", handlers.Repo.SignUpInsert)
+	mux.Group(func (r chi.Router){
+		r.Use(PreventAuthGoSignUpAndSignIn)
+
+		r.Get("/login", handlers.Repo.LoginPage)
+		r.Post("/login/verify",handlers.Repo.LoginVerify)
+		r.Get("/signup", handlers.Repo.SignUpPage)
+		r.Post("/signup/insert", handlers.Repo.SignUpInsert)
+	})
 
 	mux.Group(func (r chi.Router)  {
 		r.Use(Auth)
