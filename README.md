@@ -37,6 +37,7 @@
 | Backend     | Go (Golang)          |
 | Frontend    | Go Templates (`.tmpl`) |
 | Routing     | [Chi](https://github.com/go-chi/chi)         |
+| Handlers     | [net/http](https://pkg.go.dev/net/http)         |
 | Sessions    | [scs](https://github.com/alexedwards/scs)    |
 | CSRF Token  | [nosurf](https://github.com/justinas/nosurf) |
 | Database    | PostgreSQL           |
