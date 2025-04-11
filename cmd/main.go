@@ -6,17 +6,18 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
+	"github.com/joho/godotenv"
+	"github.com/sangketkit01/personal-block/internal/config"
 	"github.com/sangketkit01/personal-block/internal/driver"
+	"github.com/sangketkit01/personal-block/internal/handlers"
 	"github.com/sangketkit01/personal-block/internal/helpers"
 	"github.com/sangketkit01/personal-block/internal/models"
-	"github.com/sangketkit01/personal-block/internal/repository"
-
-	"github.com/alexedwards/scs/v2"
-	"github.com/sangketkit01/personal-block/internal/config"
-	"github.com/sangketkit01/personal-block/internal/handlers"
 	"github.com/sangketkit01/personal-block/internal/render"
+	"github.com/sangketkit01/personal-block/internal/repository"
 )
 
 var app config.AppConfig
@@ -35,6 +36,26 @@ func main() {
 	errorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 	app.ErrorLog = errorLog
 
+	// Load environment variables from .env file at project root
+	// Calculate path to root directory from cmd/main.go
+	rootDir, err := filepath.Abs(filepath.Join(filepath.Dir(os.Args[0]), ".."))
+	if err != nil {
+		errorLog.Println("Error finding project root:", err)
+	}
+	
+	err = godotenv.Load(filepath.Join(rootDir, ".env"))
+	if err != nil {
+		// Try another approach if the first one fails
+		// This handles both running the binary and using 'go run'
+		currentDir, _ := os.Getwd()
+		projectRoot := filepath.Dir(currentDir)
+		err = godotenv.Load(filepath.Join(projectRoot, ".env"))
+		if err != nil {
+			errorLog.Println("Warning: Error loading .env file:", err)
+			// Continue execution as we'll use default values if needed
+		}
+	}
+
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
@@ -49,9 +70,16 @@ func main() {
 		return
 	}
 
-	db, err := driver.NewDatabase("host=localhost port=5432 user=postgres password=0627457454New " +
-		"dbname=personal_blocks")
+	dbHost := getEnv("DB_HOST", "localhost")
+	dbPort := getEnv("DB_PORT", "5432")
+	dbUser := getEnv("DB_USER", "postgres")
+	dbPassword := getEnv("DB_PASSWORD", "")
+	dbName := getEnv("DB_NAME", "personal_blocks")
 
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
+		dbHost, dbPort, dbUser, dbPassword, dbName)
+
+	db, err := driver.NewDatabase(dsn)
 	if err != nil {
 		errorLog.Fatalln(err)
 	}
@@ -79,4 +107,12 @@ func main() {
 	if err = server.ListenAndServe(); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }

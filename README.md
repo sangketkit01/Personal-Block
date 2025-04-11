@@ -99,7 +99,7 @@ cd Personal-Block
 
 ### 2. Create `database.yml`
 
-Create a file `database.yml` in the project root:
+Create a file `database.yml` and `.env` in the project root :
 
 ```yaml
 development:
@@ -117,10 +117,20 @@ production:
   url: {{envOr "DATABASE_URL" "postgres://postgres:postgres@127.0.0.1:5432/myapp_production"}}
 ```
 
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=
+DB_NAME=
+```
+
 ### 3. Install Soda and run the project
 
 ```bash
 go install github.com/gobuffalo/pop/soda@latest
+soda migrate
+
 cd cmd
 go run .
 ```
@@ -132,17 +142,40 @@ go run .
 ```
 Personal-Block/
 │
-├── cmd/                  # Main application entrypoint
-├── handlers/             # HTTP handler functions
-├── models/               # Data models
-├── templates/            # HTML templates (.tmpl)
-├── middleware/           # Custom middleware like Auth
-├── helpers/              # Utility functions
-├── static/               # Static files (CSS/JS)
-├── db/                   # Database migrations
-├── go.mod / go.sum       # Go dependencies
-└── README.md             # Project documentation
-```
+├── cmd/
+│   ├── main.go
+│   ├── middleware.go
+│   └── route.go
+│
+├── internal/
+│   ├── config/
+│   │   └── config.go
+│   ├── driver/
+│   │   └── driver.go
+│   ├── forms/
+│   │   └── forms.go
+│   ├── handlers/
+│   │   └── handlers.go
+│   ├── helpers/
+│   │   └── helpers.go
+│   ├── models/
+│   │   ├── models.go
+│   │   └── templatedata.go
+│   ├── render/
+│   │   └── render.go
+│   └── repository/
+│       └── db.go
+│
+├── migrations/
+├── static/
+├── templates/
+├── .env
+├── .gitignore
+├── database.yml
+├── go.mod
+├── go.sum
+└── README.md
+
 
 ---
 
