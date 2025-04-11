@@ -135,7 +135,7 @@ func (repo *DBRepo) GetAllBlocks(r *http.Request) ([]models.Block, error) {
 
 	query := `
 		SELECT 
-			b.id, b.users_id, b.content, b.created_at, b.updated_at, COUNT(bl.users_id) as like_count
+			b.id, b.users_id, b.content, b.created_at, b.updated_at, COUNT(bl.users_id) 
 		FROM blocks b
 		LEFT JOIN block_likes bl ON b.id = bl.blocks_id
 		GROUP BY b.id, b.users_id, b.content, b.created_at, b.updated_at
@@ -224,18 +224,24 @@ func (repo *DBRepo) InsertNewBlock(userID int, content string) error{
 	return nil
 }
 
-func (repo *DBRepo) GetBlockByUserID(id int) ([]models.Block, error){
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+func (repo *DBRepo) GetBlockByUserID(id int, r* http.Request) ([]models.Block, error){
+ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
+
+	currentUser := repo.App.Session.Get(r.Context(),"user").(models.User)
 
 	var blocks []models.Block
 
 	query := `
-		SELECT b.id, b.users_id, b.content, b.created_at, b.updated_at, count(bl.users_id) FROM blocks b
-		JOIN block_likes bl ON (b.users_id = bl.users_id)
+		SELECT 
+			b.id, b.users_id, b.content, b.created_at, b.updated_at, COUNT(bl.users_id)
+		FROM blocks b
+		LEFT JOIN block_likes bl ON b.id = bl.blocks_id
 		WHERE b.users_id = $1
-		ORDER BY b.created_at DESC
+		GROUP BY b.id, b.users_id, b.content, b.created_at, b.updated_at 
+		ORDER BY b.created_at DESC;
 	`
+
 
 	rows, err :=  repo.DB.QueryContext(ctx,query,id)
 	if err != nil {
@@ -265,6 +271,7 @@ func (repo *DBRepo) GetBlockByUserID(id int) ([]models.Block, error){
 		}
 
 		block.User = user
+		block.LikeByCurrentUser = repo.IsLikeByUser(currentUser.ID,block.ID)
 
 		blocks = append(blocks, block)
 	}
@@ -359,3 +366,216 @@ func (repo *DBRepo) RemoveLikeByPostIDUserID(blockID, userID int) error{
 
 	return nil
 }
+
+func (repo *DBRepo) GetBlockFromID(id int, r *http.Request) (models.Block,error){
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var block models.Block
+	currentUser := repo.App.Session.Get(r.Context(),"user").(models.User)
+
+	query := `
+		SELECT b.id, b.users_id, b.content, b.created_at, b.updated_at, count(bl.blocks_id)
+		FROM blocks b
+		LEFT JOIN block_likes bl ON (bl.blocks_id = b.id)
+		WHERE b.id = $1
+		GROUP BY b.id, b.users_id, b.content, b.created_at, b.updated_at
+	`
+
+	row := repo.DB.QueryRowContext(ctx,query,id)
+	err := row.Scan(
+		&block.ID,
+		&block.UserID, 
+		&block.Content,
+		&block.CreatedAt,
+		&block.UpdatedAt,
+		&block.LikeCount,
+	)
+
+	if err != nil{
+		return block, err
+	}
+
+	user, err := repo.GetUserFromID(block.UserID)
+	if err != nil{
+		return block, err
+	}
+
+	block.User = user
+	block.LikeByCurrentUser = repo.IsLikeByUser(currentUser.ID,block.ID)
+	block.CommentCount = repo.CommentCountByBlockID(block.ID)
+
+	return block, nil
+}  
+
+func (repo *DBRepo) InsertCommentByBlockIDUserID(content string, blockID, userID int) error{
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	query := `
+		INSERT INTO comments (users_id, blocks_id, content, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+
+	_, err := repo.DB.ExecContext(ctx, query, userID, blockID, content, time.Now(), time.Now())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *DBRepo) CommentCountByBlockID(blockID int) int{
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var count int
+	query := `
+		SELECT count(blocks_id) FROM comments
+		WHERE blocks_id = $1
+	`
+
+	row := repo.DB.QueryRowContext(ctx, query, blockID)
+	err := row.Scan(&count)
+	if err != nil{
+		return 0
+	}
+
+	return count
+}
+
+func (repo *DBRepo) GetCommentsByBlockID(blockID int , r *http.Request) ([]models.Comment, error){
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var comments []models.Comment
+
+	currentUser := repo.App.Session.Get(r.Context(),"user").(models.User)
+
+	query := `
+		SELECT id, users_id, blocks_id, content, updated_at, created_at 
+		FROM comments
+		WHERE blocks_id = $1
+	`
+
+	rows, err := repo.DB.QueryContext(ctx,query,blockID)
+	if err != nil{
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next(){
+		var comment models.Comment
+		err := rows.Scan(
+			&comment.ID,
+			&comment.UserID,
+			&comment.BlockID,
+			&comment.Content,
+			&comment.UpdatedAt,
+			&comment.CreatedAt,
+		)
+
+		if err != nil{
+			return nil, err
+		}
+
+		block, err := repo.GetBlockFromID(comment.BlockID,r)
+		if err != nil{
+			return nil, err
+		}
+
+		comment.Block = block
+		
+		user, err := repo.GetUserFromID(comment.UserID)
+		if err != nil {
+			return nil, err
+		}
+
+		comment.User = user
+		comment.LikeByCurrentUser = repo.CommentLikeByUser(currentUser.ID,comment.ID)
+		comment.LikeCount = repo.CommentCountByID(comment.ID)
+
+		comments = append(comments, comment)
+	}
+
+	if err = rows.Err() ; err != nil{
+		return nil, err
+	}
+
+	return comments, nil
+}
+
+func (repo *DBRepo) CommentLikeByUser(userID, commentID int) bool{
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var count int
+	query := `
+		SELECT count(users_id) 
+		FROM comment_likes 
+		WHERE users_id = $1 AND comments_id = $2
+	`
+
+	row := repo.DB.QueryRowContext(ctx,query,userID,commentID)
+	err := row.Scan(&count)
+	if err != nil{
+		return false
+	} 
+
+	return count != 0
+}
+
+func (repo *DBRepo) CommentCountByID(commentID int) int{
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	var count int
+	query := `
+		SELECT count(comments_id) 
+		FROM comment_likes 
+		WHERE comments_id = $1
+	`
+
+	row := repo.DB.QueryRowContext(ctx,query,commentID)
+	err := row.Scan(&count)
+	if err != nil {
+		return 0
+	}
+
+	return count
+}
+
+func (repo *DBRepo) InsertCommentLikeByCommentIDUserID(commentID, userID int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	query := `
+		INSERT INTO comment_likes (users_id, comments_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4)
+	`
+
+	_, err := repo.DB.ExecContext(ctx,query,userID,commentID,time.Now(),time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repo *DBRepo) RemoveCommentLikeByCommentIDUserID(commentID, userID int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	query := `
+		DELETE FROM comment_likes 
+		WHERE users_id = $1 AND comments_id = $2
+	`
+
+	_, err := repo.DB.ExecContext(ctx,query,userID,commentID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+

@@ -19,6 +19,7 @@ import (
 var app *config.AppConfig
 var functions = template.FuncMap{
 	"humanTime" : HumanTime,
+	"firstChar" : FirstChar,
 }
 
 var pathToTemplates = "../templates"
@@ -30,6 +31,14 @@ func NewRenderer(a *config.AppConfig) {
 
 func HumanTime(t time.Time) string{
 	return t.Format("2006-01-02 15:04")
+}
+
+func FirstChar(s string) string{
+	if len(s) == 0{
+		return ""
+	}
+
+	return string([]rune(s)[0])
 }
 
 // AddDefaultData adds default data to our app

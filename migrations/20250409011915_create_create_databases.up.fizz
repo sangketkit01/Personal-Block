@@ -32,7 +32,6 @@ create_table("comments") {
 }
 
 create_table("block_likes") {
-  t.Column("id", "integer", {primary: true})
   t.Column("blocks_id", "integer", {"null": false})
   t.Column("users_id", "integer", {"null": false})
   t.ForeignKey("blocks_id", {"blocks": ["id"]}, {"on_delete": "cascade"})
@@ -41,11 +40,8 @@ create_table("block_likes") {
 }
 
 create_table("comment_likes") {
-  t.Column("id", "integer", {primary: true})
   t.Column("users_id", "integer", {"null": false})
   t.Column("comments_id", "integer", {"null": false})
-  t.Column("comments_users_id", "integer", {"null": false})
-  t.Column("comments_blocks_id", "integer", {"null": false})
   t.ForeignKey("users_id", {"users": ["id"]}, {"on_delete": "cascade"})
   t.ForeignKey("comments_id", {"comments": ["id"]}, {"on_delete": "cascade"})
   t.Index(["comments_id", "users_id"], {"unique": true})

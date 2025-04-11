@@ -111,9 +111,7 @@
     {{define "js"}}
         <script>
             function openPost(postId) {
-            console.log(`Opening post ${postId}`);
-            // In a real application, you would redirect to the post page
-            // window.location.href = `/post/${postId}`;
+             window.location.href = `/read-block/${postId}`;
         }
         
         function likePost(event, postId) {

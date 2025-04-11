@@ -21,16 +21,26 @@ func route() http.Handler {
 
 	mux.Group(func (r chi.Router)  {
 		r.Use(Auth)
+		r.Get("/",handlers.Repo.Home)
 		r.Get("/logout",handlers.Repo.Logout)
+		
 		r.Get("/myblock",handlers.Repo.MyBlock)
 		r.Get("/profile",handlers.Repo.ProfilePage)
+
 		r.Post("/update-profile",handlers.Repo.UpdateProfile)
 		r.Post("/update-password",handlers.Repo.UpdatePassword)
+
 		r.Post("/new-post",handlers.Repo.NewPost)
-		r.Get("/",handlers.Repo.Home)
+		
 
 		r.Post("/insert-like/{id}/{user_id}",handlers.Repo.InsertLike)
+		r.Post("/insert-comment-like/{id}/{user_id}",handlers.Repo.InsertCommentLike)
+		r.Post("/remove-comment-like/{id}/{user_id}",handlers.Repo.RemoveCommentLike)
 		r.Post("/remove-like/{id}/{user_id}",handlers.Repo.RemoveLike)
+
+		r.Get("/read-block/{id}",handlers.Repo.ReadBlock)
+		r.Post("/insert-comment/{block_id}",handlers.Repo.InsertComment)
+
 	})
 
 	fileServer := http.FileServer(http.Dir("../../static/"))

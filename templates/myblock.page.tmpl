@@ -59,10 +59,12 @@
 
     {{define "content"}}
         <div class="container">
-
+            <div class="col d-flex flex-column justify-items-center w-75 mx-auto">
                 <div class="mt-3"></div>
                 
                 {{$blocks := index .Data "blocks"}}
+                {{$user := index .Data "user"}}
+                {{$csrf := .CSRFToken}}
                 {{range $blocks}}
                     <div class="card mt-3 bg-dark text-white" onclick="openPost({{.ID}})">
                         <div class="card-header d-flex" style="gap: 10px;">
@@ -72,11 +74,24 @@
                             <p class="card-text">{{.Content}}</p>
                         </div>
                         <div class="card-footer">
-                            <button class="like-button" onclick="likePost(event, {{.ID}})">
-                                <i class="fa-regular fa-heart"></i>
-                                <span>Like</span>
-                            </button>
-                            <span class="likes-count" id="likes-count-1">0 likes</span>
+                            {{if .LikeByCurrentUser}}
+                                <form action="/remove-like/{{.ID}}/{{$user.ID}}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{$csrf}}">
+                                    <button class="like-button" type="submit">
+                                        <i class="fa-solid fa-heart"></i>
+                                        <span>Like</span>
+                                    </button>
+                                </form>
+                            {{else}}
+                                <form action="/insert-like/{{.ID}}/{{$user.ID}}" method="post">
+                                     <input type="hidden" name="csrf_token" value="{{$csrf}}">
+                                    <button class="like-button" type="submit">
+                                        <i class="fa-regular fa-heart"></i>
+                                        <span>Like</span>
+                                    </button>
+                                </form>
+                            {{end}}
+                            <span class="likes-count" id="likes-count-1">{{.LikeCount}} likes</span>
                         </div>
                     </div>
                 {{end}}
@@ -89,9 +104,7 @@
     {{define "js"}}
         <script>
             function openPost(postId) {
-            console.log(`Opening post ${postId}`);
-            // In a real application, you would redirect to the post page
-            // window.location.href = `/post/${postId}`;
+             window.location.href = `/read-block/${postId}`;
         }
         
         function likePost(event, postId) {

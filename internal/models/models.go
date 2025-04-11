@@ -25,6 +25,7 @@ type Block struct{
 	User User
 	LikeCount int
 	LikeByCurrentUser bool
+	CommentCount int
 }
 
 type Comment struct{
@@ -36,6 +37,8 @@ type Comment struct{
 	UpdatedAt time.Time
 	User User
 	Block Block
+	LikeCount int
+	LikeByCurrentUser bool
 }
 
 type BlockLike struct{
