@@ -35,8 +35,8 @@ func (repo *DBRepo) InsertUser(user models.User) error {
 	defer cancel()
 
 	query := `
-		INSERT INTO users ( username, email, phone, name, password, created_at, updated_at)
-		values ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO users ( username, email, phone, name, password, created_at, updated_at,profile_image)
+		values ($1, $2, $3, $4, $5, $6, $7,$8)
 	`
 
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -51,7 +51,9 @@ func (repo *DBRepo) InsertUser(user models.User) error {
 		user.Name,
 		hashPassword,
 		time.Now(),
-		time.Now())
+		time.Now(),
+		"default.png",
+	)
 
 	if err != nil {
 		return err

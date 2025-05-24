@@ -58,19 +58,19 @@
 
 
     {{define "content"}}
+        {{$user := index .Data "user"}}
         <div class="container">
             <div class="col d-flex flex-column justify-items-center w-75 mx-auto mb-4">
                 <form action="/new-post" class="form-group mx-auto w-100 d-flex flex-column" method="post">
                     <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
                     <textarea name="block-content" class="form-control bg-dark text-white" rows="10"
-                        placeholder="What's on your mind, นิว?" required></textarea>
+                        placeholder="What's on your mind, {{$user.Name}}?" required></textarea>
                     <input type="submit" id="submit-new-block" value="Submit" class="btn btn-primary mt-3 ms-auto">
                 </form>
 
                 <div class="mt-3"></div>
                 
                 {{$blocks := index .Data "blocks"}}
-                {{$user := index .Data "user"}}
                 {{$csrf := .CSRFToken}}
                 {{range $blocks}}
                     <div class="card mt-3 bg-dark text-white" onclick="openPost({{.ID}})">

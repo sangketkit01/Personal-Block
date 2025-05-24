@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 0627457454New
+      POSTGRES_DB: personal_blocks
+    ports:
+      - "5434:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: golang:1.24-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - .:/app
+    entrypoint: sh -c "
+      apk add --no-cache git && \
+      go install github.com/gobuffalo/pop/v6/soda@latest && \
+      soda migrate up -e development"
+
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=0627457454New
+      - DB_NAME=personal_blocks
+    ports:
+      - "8089:8216"
+    restart: unless-stopped
+
+volumes:
+  db-data:
